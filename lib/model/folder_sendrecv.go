@@ -331,6 +331,11 @@ loop:
 			continue
 		}
 
+		if f.IgnoreEmptied && !file.IsDeleted() && file.Type == protocol.FileInfoTypeFile && file.Size == 0 {
+			f.sl.DebugContext(ctx, "Ignoring emptied (0-byte) file per config", slogutil.FilePath(file.FileName()))
+			continue
+		}
+
 		switch {
 		case f.ignores.Match(file.Name).IsIgnored():
 			file.SetIgnored()

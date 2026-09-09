@@ -1044,6 +1044,9 @@ func (m *model) NeedFolderFiles(folder string, page, perpage int) ([]protocol.Fi
 			if cfg.IgnoreDelete && f.IsDeleted() {
 				continue
 			}
+			if cfg.IgnoreEmptied && !f.IsDeleted() && f.Type == protocol.FileInfoTypeFile && f.Size == 0 {
+				continue
+			}
 
 			if p.skip() {
 				continue
