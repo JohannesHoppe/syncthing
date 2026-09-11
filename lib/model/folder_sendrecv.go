@@ -332,8 +332,16 @@ loop:
 		}
 
 		if f.IgnoreEmptied && !file.IsDeleted() && file.Type == protocol.FileInfoTypeFile && file.Size == 0 {
-			f.sl.DebugContext(ctx, "Ignoring emptied (0-byte) file per config", slogutil.FilePath(file.FileName()))
-			continue
+			// Only refuse a 0-byte pull when we hold a NON-EMPTY local version:
+			// that is the truncation case worth protecting (a crash-emptied file
+			// must not overwrite good content). A genuinely-empty incoming file
+			// (no local copy, or the local copy is itself 0 bytes) is pulled
+			// normally, so legitimately-empty files still converge and do not sit
+			// forever as "needed" (out of sync).
+			if cur, ok, err := f.db.GetDeviceFile(f.folderID, protocol.LocalDeviceID, file.Name); err == nil && ok && cur.Size > 0 {
+				f.sl.DebugContext(ctx, "Ignoring emptied (0-byte) file over non-empty local per config", slogutil.FilePath(file.FileName()))
+				continue
+			}
 		}
 
 		switch {
